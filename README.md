@@ -91,7 +91,7 @@ Now, any changes you make to your Go files will trigger an automatic restart of 
 
 ## Endpoints
 
-### \`/`
+### `/`
 
 - **Method**: \`GET\`
 - **Description**: Get all Stripe payment links stored on database.
@@ -121,7 +121,7 @@ Now, any changes you make to your Go files will trigger an automatic restart of 
   ]
   ```
 
-### \`/create-payment-link\`
+### `/create-payment-link`
 
 - **Method**: \`GET\`
 - **Description**: Generates a Stripe payment link.
@@ -132,7 +132,7 @@ Now, any changes you make to your Go files will trigger an automatic restart of 
   }
   ```
 
-### \`/webhook\`
+### `/webhook`
 
 - **Method**: \`POST\`
 - **Description**: Handles Stripe webhooks for payment updates.
