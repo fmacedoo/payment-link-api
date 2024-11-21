@@ -1,8 +1,9 @@
-# Stripe Payment Link API
+# Stripe Payment Link API (Go Lang)
 
 This project provides a small API for generating Stripe payment links and handling webhooks. It is built using Go and exposes the following endpoints:
 
-- `POST /create-payment-link` - Generate a Stripe payment link.
+- `GET /` - Query all the Stripe payment link created.
+- `GET /create-payment-link` - Generate a Stripe payment link.
 - `POST /webhook` - Handle Stripe webhooks.
 
 ## Getting Started
@@ -11,6 +12,19 @@ This project provides a small API for generating Stripe payment links and handli
 
 - [Go](https://golang.org/dl/) \(version 1.20 or newer recommended\)
 - [Stripe API Key](https://stripe.com/docs/keys)
+- [Stripe Testing Cards](https://docs.stripe.com/testing)
+
+### Environment Variables
+
+- Create a `.env` file with the following variables.
+
+```
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_PRICE_ID=price_xxx
+```
+
+- STRIPE_WEBHOOK_SECRET becomes available only after the [Stripe webhook](#activate-the-stripe-webhook) is activated.
 
 ### Steps to Run
 
@@ -77,10 +91,10 @@ Now, any changes you make to your Go files will trigger an automatic restart of 
 
 ## Endpoints
 
-### \`/create-payment-link\`
+### \`/`
 
-- **Method**: \`POST\`
-- **Description**: Generates a Stripe payment link.
+- **Method**: \`GET\`
+- **Description**: Get all Stripe payment links stored on database.
 - **Request Body**:
   ```json
   {
@@ -91,8 +105,30 @@ Now, any changes you make to your Go files will trigger an automatic restart of 
   ```
 - **Response**:
   ```json
+  [
+    {
+      "id": "a5YIGpjIL3SB",
+      "payment_link_id": "a5YIGpjIL3SB",
+      "url": "https://buy.stripe.com/test_28o3ds3TJ0c224wfZa",
+      "paid": false
+    },
+    {
+      "id": "p2CHuDsmT5P9",
+      "payment_link_id": "p2CHuDsmT5P9",
+      "url": "https://buy.stripe.com/test_5kA9BQ1LB7Eu8sUeV7",
+      "paid": true
+    }
+  ]
+  ```
+
+### \`/create-payment-link\`
+
+- **Method**: \`GET\`
+- **Description**: Generates a Stripe payment link.
+- **Response**:
+  ```json
   {
-    "url": "https://payment.stripe.com/payment-link"
+    "payment_link": "https://payment.stripe.com/payment-link"
   }
   ```
 

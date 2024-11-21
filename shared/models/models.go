@@ -1,11 +1,13 @@
 package models
 
-type GoLinkPaymentLink struct {
-	Link string `json:"link"`
-	Id   string `json:"id"`
+type PaymentLinkModel struct {
+	ID            string `gorm:"primaryKey"`
+	PaymentLinkID string `gorm:"not null"`
+	Url           string `gorm:"not null"`
+	Paid          bool   `gorm:"not null;default:false"`
 }
 
-func NewGoLinkPaymentLink(link string, id string) *GoLinkPaymentLink {
-	p := GoLinkPaymentLink{Link: link, Id: id}
+func NewPaymentLinkModel(id, paymentLinkId, url string) *PaymentLinkModel {
+	p := PaymentLinkModel{ID: id, PaymentLinkID: paymentLinkId, Url: url}
 	return &p
 }

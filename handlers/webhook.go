@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"golink/shared/constants"
+	"golink/shared/database"
+	"golink/stripeapi"
 	"io"
 	"log"
 	"net/http"
@@ -9,9 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/v81/paymentintent"
 	"github.com/stripe/stripe-go/webhook"
-
-	"golink/shared/constants"
 )
 
 // StripeWebhookHandler processes Stripe webhook events
@@ -39,20 +42,45 @@ func StripeWebhookHandler(c *gin.Context) {
 	// Handle the event
 	switch event.Type {
 	case "payment_intent.succeeded":
-		var paymentIntent stripe.PaymentIntent
-		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
-			log.Printf("Failed to parse payment intent: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &pi); err != nil {
+			http.Error(c.Writer, "Failed to parse payment intent", http.StatusBadRequest)
 			return
 		}
 
-		log.Printf("%w", event)
-		log.Printf("%w", paymentIntent)
+		fmt.Printf("PaymentIntent succeeded: %s\n", pi.ID)
 
-		if customIdentifier, exists := paymentIntent.Metadata[constants.GOLINK_IDENTIFIER]; exists {
-			log.Printf("Custom Identifier: %s", customIdentifier)
+		// Optional: Retrieve the PaymentIntent to fetch additional details
+		intent, err := paymentintent.Get(pi.ID, nil)
+		if err != nil {
+			fmt.Printf("Failed to retrieve payment intent: %v\n", err)
+			http.Error(c.Writer, "Failed to retrieve payment intent", http.StatusInternalServerError)
+			return
+		}
+
+		if identifier, exists := intent.Metadata[constants.GOLINK_IDENTIFIER]; exists {
+			fmt.Printf("Payment was made with identifier: %s\n", identifier)
+			dbPaymentLink, getPaymentLinkErr := database.GetPaymentLinkById(identifier)
+			if getPaymentLinkErr != nil {
+				fmt.Errorf("No payment link found with identifier")
+				return
+			}
+
+			dbPaymentLinkUpdateErr := database.UpdatePaymentLink(dbPaymentLink.ID, map[string]interface{}{"Paid": true})
+			if dbPaymentLinkUpdateErr != nil {
+				fmt.Errorf("Payment Link failed to be updated on database")
+				http.Error(c.Writer, "Payment Link failed to be updated on database", http.StatusInternalServerError)
+				return
+			}
+
+			disabledPaymentLinkErr := stripeapi.DisablePaymentLink(dbPaymentLink.PaymentLinkID)
+			if disabledPaymentLinkErr != nil {
+				fmt.Errorf("Payment Link failed to be disabled")
+				http.Error(c.Writer, "Payment Link failed to be disabled", http.StatusInternalServerError)
+				return
+			}
 		} else {
-			log.Println("No custom identifier found in metadata")
+			fmt.Println("No payment link metadata found")
 		}
 	case "payment_intent.failed":
 		log.Println("Payment failed.")

@@ -3,7 +3,7 @@ package stripeapi
 import (
 	"fmt"
 	"golink/shared/constants"
-	"golink/shared/models"
+	"golink/shared/dto"
 	"golink/shared/utils"
 	"log"
 	"os"
@@ -18,7 +18,7 @@ func InitializeStripe(secretKey string) {
 }
 
 // CreatePaymentLink creates a Stripe payment link
-func CreatePaymentLink() (*models.GoLinkPaymentLink, error) {
+func CreatePaymentLink() (*dto.PaymentLinkDTO, error) {
 	stripePriceId := os.Getenv("STRIPE_PRICE_ID")
 	if stripePriceId == "" {
 		log.Fatalf("STRIPE_WEBHOOK_SECRET not set in .env file")
@@ -36,6 +36,11 @@ func CreatePaymentLink() (*models.GoLinkPaymentLink, error) {
 		Metadata: map[string]string{
 			constants.GOLINK_IDENTIFIER: id,
 		},
+		PaymentIntentData: &stripe.PaymentLinkPaymentIntentDataParams{
+			Metadata: map[string]string{
+				constants.GOLINK_IDENTIFIER: id,
+			},
+		},
 	}
 
 	link, err := paymentlink.New(params)
@@ -43,5 +48,13 @@ func CreatePaymentLink() (*models.GoLinkPaymentLink, error) {
 		return nil, fmt.Errorf("failed to create payment link: %w", err)
 	}
 
-	return models.NewGoLinkPaymentLink(link.URL, id), nil
+	return dto.NewPaymentLinkDTO(id, link.ID, link.URL), nil
+}
+
+func DisablePaymentLink(id string) error {
+	_, err := paymentlink.Update(id, &stripe.PaymentLinkParams{
+		Active: stripe.Bool(false),
+	})
+
+	return err
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"golink/handlers"
+	"golink/shared/database"
 	"golink/stripeapi"
 	"log"
 	"os"
@@ -26,11 +27,21 @@ func main() {
 	// Initialize Stripe
 	stripeapi.InitializeStripe(stripeSecretKey)
 
+	// Initialize the database
+	if err := database.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer func() {
+		if err := database.CloseDB(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		}
+	}()
+
 	// Create Gin router
 	router := gin.Default()
 
 	// Define routes
-	router.GET("/", handlers.Health)
+	router.GET("/", handlers.Query)
 	router.GET("/create-payment-link", handlers.CreatePaymentLinkHandler)
 	router.POST("/webhook", handlers.StripeWebhookHandler)
 
